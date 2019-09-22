@@ -26,8 +26,10 @@ func (api APIv1) Prefix() string {
 func (api APIv1) Route(router *mux.Router) {
 	router.HandleFunc("/location", api.getLatestLocation).Methods("GET")
 	router.HandleFunc("/location", api.postLocation).Methods("POST")
-	router.HandleFunc("/location/{key}", api.getLatestLocationWithKey).Methods("GET")
+
 	router.HandleFunc("/key", api.postAccessKey).Methods("POST")
+	router.HandleFunc("/key/{key}", api.getAccessKey).Methods("GET")
+	router.HandleFunc("/key/{key}", api.deleteAccessKey).Methods("DELETE")
 }
 
 func (api *APIv1) contentTypeJSON(w http.ResponseWriter, r *http.Request) {
@@ -140,6 +142,33 @@ func (api *APIv1) postLocation(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("true"))
 }
 
+func (api *APIv1) getAccessKey(w http.ResponseWriter, r *http.Request) {
+	api.contentTypeJSON(w, r)
+
+	if r.Header.Get("Authorization") != "Bearer "+envSharedKey {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+
+	var key model.AccessKey
+	notFound := api.DB.Find(&key, model.AccessKey{Key: vars["key"]}).RecordNotFound()
+
+	if notFound {
+		api.apiError("not found", w, r)
+		return
+	}
+
+	j, err := json.Marshal(key)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
+}
+
 func (api *APIv1) postAccessKey(w http.ResponseWriter, r *http.Request) {
 	api.contentTypeJSON(w, r)
 
@@ -165,7 +194,31 @@ func (api *APIv1) postAccessKey(w http.ResponseWriter, r *http.Request) {
 	w.Write(j)
 }
 
-func (api *APIv1) getLatestLocationWithKey(w http.ResponseWriter, r *http.Request) {
+func (api *APIv1) deleteAccessKey(w http.ResponseWriter, r *http.Request) {
 	api.contentTypeJSON(w, r)
-	http.Error(w, "Not Implemented", http.StatusNotImplemented)
+
+	if r.Header.Get("Authorization") != "Bearer "+envSharedKey {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	vars := mux.Vars(r)
+
+	var key model.AccessKey
+	notFound := api.DB.Find(&key, model.AccessKey{Key: vars["key"]}).RecordNotFound()
+
+	if notFound {
+		api.apiError("not found", w, r)
+		return
+	}
+
+	api.DB.Delete(&key)
+
+	j, err := json.Marshal(key)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
 }
