@@ -8,3 +8,9 @@
 .big-text a {
   color: black;
 }
+
+@media (prefers-color-scheme: dark) {
+  .big-text, .big-text a {
+    color: white;
+  }
+}

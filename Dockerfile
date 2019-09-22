@@ -2,19 +2,21 @@
 FROM node:latest AS node_builder
 
 WORKDIR /frontend
-COPY ./frontend .
 
-RUN npm install && npm run build
+COPY ./frontend/package*.json ./
+RUN npm install
+
+COPY ./frontend .
+RUN npm run build
 
 ### Go Build (for main app)
 FROM golang:1.13 AS go_builder
 
 WORKDIR /go/src/github.com/tjhorner/whereis
+RUN go get -u github.com/gobuffalo/packr/v2/packr2
 
 COPY . .
-
 RUN go get -d -v .
-RUN go get -u github.com/gobuffalo/packr/v2/packr2
 
 COPY --from=node_builder /frontend/build ./frontend/build/
 

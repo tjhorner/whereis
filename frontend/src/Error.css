@@ -1,0 +1,14 @@
+.error {
+  width: fit-content;
+  padding: 30px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.error img {
+  max-width: 300px;
+}
+
+.error h4 {
+  color: darkgray;
+}

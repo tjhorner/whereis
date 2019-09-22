@@ -1,3 +1,17 @@
+*, * * {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+}
+
+a {
+  color: black;
+}
+
 body {
   margin: 0;
   font-family: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -10,4 +24,15 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1d1d1d;
+    color: white;
+  }
+
+  a {
+    color: white;
+  }
 }

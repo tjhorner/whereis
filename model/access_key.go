@@ -25,3 +25,9 @@ func (key *AccessKey) BeforeCreate() error {
 	}
 	return nil
 }
+
+// HasAccess does a thing to see if an access key has access
+func (key *AccessKey) HasAccess() bool {
+	// TODO: start and end dates
+	return true
+}

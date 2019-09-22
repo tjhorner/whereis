@@ -1,11 +1,21 @@
 .App {
   font-size: 2em;
   width: fit-content;
-  padding: 0px 30px;
-  margin: 30px auto;
+  max-width: 800px;
+  padding: 30px;
+  margin: 0 auto;
   color: darkgray;
 }
 
 .charging-icon {
   margin-left: 10px;
+}
+
+.leaflet-container {
+  margin: 30px 0;
+  height: 300px;
+}
+
+.warning {
+  color: red;
 }

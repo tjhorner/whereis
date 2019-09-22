@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -26,10 +27,26 @@ func (api APIv1) Route(router *mux.Router) {
 	router.HandleFunc("/location", api.getLatestLocation).Methods("GET")
 	router.HandleFunc("/location", api.postLocation).Methods("POST")
 	router.HandleFunc("/location/{key}", api.getLatestLocationWithKey).Methods("GET")
+	router.HandleFunc("/key", api.postAccessKey).Methods("POST")
 }
 
 func (api *APIv1) contentTypeJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+}
+
+type apiError struct {
+	Error string `json:"error"`
+}
+
+func (api *APIv1) apiError(errorString string, w http.ResponseWriter, r *http.Request) {
+	e := apiError{errorString}
+	j, err := json.Marshal(e)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
 }
 
 func (api *APIv1) getLatestLocation(w http.ResponseWriter, r *http.Request) {
@@ -45,10 +62,30 @@ func (api *APIv1) getLatestLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Censor some information
-	latestLocation.Latitude = 0
-	latestLocation.Longitude = 0
-	latestLocation.Accuracy = 0
+	extended := false
+	if r.URL.Query().Get("key") != "" {
+		var key model.AccessKey
+		keyNotFound := api.DB.Find(&key, model.AccessKey{Key: r.URL.Query().Get("key")}).RecordNotFound()
+
+		if !keyNotFound {
+			extended = key.HasAccess()
+		} else {
+			api.apiError("Access key not found.", w, r)
+			return
+		}
+
+		if !extended {
+			api.apiError("This key does not have extended access yet.", w, r)
+			return
+		}
+	}
+
+	if !extended {
+		// Censor some information
+		latestLocation.Latitude = 0
+		latestLocation.Longitude = 0
+		latestLocation.Accuracy = 0
+	}
 
 	j, err := json.Marshal(latestLocation)
 	if err != nil {
@@ -90,8 +127,10 @@ func (api *APIv1) postLocation(w http.ResponseWriter, r *http.Request) {
 
 	if place.Address.Neighborhood != "" {
 		location.CoarseLocation = place.Address.Neighborhood
+		location.SearchQuery = fmt.Sprintf("%s, %s, %s", place.Address.Neighborhood, place.Address.City, place.Address.State)
 	} else if place.Address.City != "" {
 		location.CoarseLocation = place.Address.City
+		location.SearchQuery = fmt.Sprintf("%s, %s", place.Address.City, place.Address.State)
 	} else {
 		location.CoarseLocation = "Unknown Place"
 	}
@@ -99,6 +138,31 @@ func (api *APIv1) postLocation(w http.ResponseWriter, r *http.Request) {
 	api.DB.Create(&location)
 
 	w.Write([]byte("true"))
+}
+
+func (api *APIv1) postAccessKey(w http.ResponseWriter, r *http.Request) {
+	api.contentTypeJSON(w, r)
+
+	if r.Header.Get("Authorization") != "Bearer "+envSharedKey {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	r.ParseForm()
+	key := model.AccessKey{
+		Indefinite: true,
+		Notes:      r.Form.Get("notes"),
+	}
+
+	api.DB.Create(&key)
+
+	j, err := json.Marshal(key)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
 }
 
 func (api *APIv1) getLatestLocationWithKey(w http.ResponseWriter, r *http.Request) {
