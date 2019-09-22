@@ -12,3 +12,8 @@
 .error h4 {
   color: darkgray;
 }
+
+.error figcaption {
+  color: darkgray;
+  font-size: 0.8em;
+}
