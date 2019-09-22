@@ -1,0 +1,6 @@
+whereis.db3
+Dockerfile
+bin
+dist
+frontend/node_modules
+frontend/build

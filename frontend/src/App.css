@@ -1,0 +1,11 @@
+.App {
+  font-size: 2em;
+  width: fit-content;
+  padding: 0px 30px;
+  margin: 30px auto;
+  color: darkgray;
+}
+
+.charging-icon {
+  margin-left: 10px;
+}

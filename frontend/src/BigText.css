@@ -1,0 +1,10 @@
+.big-text {
+  color: black;
+  margin: 10px 0;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.big-text a {
+  color: black;
+}
