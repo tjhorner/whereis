@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
@@ -25,6 +26,7 @@ func (api APIv1) Prefix() string {
 // Route implements API.Route
 func (api APIv1) Route(router *mux.Router) {
 	router.HandleFunc("/location", api.getLatestLocation).Methods("GET")
+	router.HandleFunc("/locations", api.getLatestLocations).Methods("GET")
 	router.HandleFunc("/location", api.postLocation).Methods("POST")
 
 	router.HandleFunc("/key", api.postAccessKey).Methods("POST")
@@ -90,6 +92,55 @@ func (api *APIv1) getLatestLocation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	j, err := json.Marshal(latestLocation)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(j)
+}
+
+// GET /locations
+func (api *APIv1) getLatestLocations(w http.ResponseWriter, r *http.Request) {
+	api.contentTypeJSON(w, r)
+
+	extended := false
+	if r.URL.Query().Get("key") != "" {
+		var key model.AccessKey
+		keyNotFound := api.DB.Find(&key, model.AccessKey{Key: r.URL.Query().Get("key")}).RecordNotFound()
+
+		if !keyNotFound {
+			extended = key.HasAccess()
+		} else {
+			api.apiError("Access key not found.", w, r)
+			return
+		}
+
+		if !extended {
+			api.apiError("This key does not have extended access yet.", w, r)
+			return
+		}
+	}
+
+	if !extended {
+		api.apiError("Unauthorized", w, r)
+		return
+	}
+
+	now := time.Now()
+	oneHourAgo := now.Add(time.Duration(-1) * time.Hour)
+
+	var locations []model.Location
+	var recordsFound int
+	api.DB.Where("created_at > ?", oneHourAgo).Order("created_at DESC").Find(&locations).Count(&recordsFound)
+
+	if recordsFound == 0 {
+		w.WriteHeader(404)
+		w.Write([]byte("[]"))
+		return
+	}
+
+	j, err := json.Marshal(locations)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
