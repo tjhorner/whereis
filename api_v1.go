@@ -128,15 +128,29 @@ func (api *APIv1) getLatestLocations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
-	oneHourAgo := now.Add(time.Duration(-1) * time.Hour)
+	oneDayAgo := now.Add(time.Duration(-24) * time.Hour)
 
 	var locations []model.Location
 	var recordsFound int
-	api.DB.Where("created_at > ?", oneHourAgo).Order("created_at DESC").Find(&locations).Count(&recordsFound)
+	api.DB.Where("created_at > ?", oneDayAgo).Order("created_at DESC").Find(&locations).Count(&recordsFound)
 
 	if recordsFound == 0 {
-		w.WriteHeader(404)
-		w.Write([]byte("[]"))
+		var latestLocation []model.Location
+		api.DB.Last(&latestLocation).Count(&recordsFound)
+
+		if recordsFound == 0 {
+			w.WriteHeader(404)
+			w.Write([]byte("[]"))
+			return
+		}
+
+		j, err := json.Marshal(latestLocation)
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		w.Write(j)
 		return
 	}
 

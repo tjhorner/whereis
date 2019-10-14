@@ -7,6 +7,12 @@
   color: darkgray;
 }
 
+@media only screen and (max-width: 480px) {
+  .App {
+    font-size: 1.5em;
+  }
+}
+
 .charging-icon {
   margin-left: 10px;
 }
@@ -18,4 +24,12 @@
 
 .warning {
   color: red;
+}
+
+.slider {
+  margin-left: 0;
+  margin-right: 0;
+  margin-top: 30px;
+  width: 100%;
+  direction: rtl;
 }
