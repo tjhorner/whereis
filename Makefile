@@ -1,6 +1,6 @@
 .PHONY: dist dist-win dist-macos dist-linux ensure-dist-dir build build-frontend install uninstall
 
-GOBUILD=packr2 build -ldflags="-s -w"
+GOBUILD=packr2 && go build -ldflags="-s -w"
 INSTALLPATH=/usr/local/bin
 
 ensure-dist-dir:

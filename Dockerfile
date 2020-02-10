@@ -20,7 +20,8 @@ RUN go get -d -v .
 
 COPY --from=node_builder /frontend/build ./frontend/build/
 
-RUN packr2 build -v -ldflags="-linkmode external -extldflags -static -s -w" -o /whereis *.go
+RUN packr2
+RUN go build -v -ldflags="-linkmode external -extldflags -static -s -w" -o /whereis *.go
 
 ### Packaged (single binary!)
 # We use the distroless/static image since it includes a list of CAs and tzinfo, but is also very slim
