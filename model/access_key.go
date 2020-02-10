@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
-
 	"github.com/jinzhu/gorm"
 )
 
